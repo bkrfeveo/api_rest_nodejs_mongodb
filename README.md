@@ -2,7 +2,7 @@
 ## Présentation
 C'est une API faite pour la gestions des taches.
 
-Il est développer avec le framework **Express JS** pour sa simple utilisation et le librairie **uuid** pour avoir des ID de type UUID.
+Il est développer avec le framework **Express JS** pour sa simple utilisation, **MongoDB** pour la base de données et le librairie **uuid** pour avoir des ID de type UUID.
 
 La gestion des erreur est faite grace aux codes d'état (200, 201, 400...)
 

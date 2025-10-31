@@ -9,7 +9,7 @@ const connectDB = async () => {
     
     console.log(`MongoDB Connectée: ${conn.connection.host}`);
   } catch (error) {
-    console.error('Erreur de connexion de lq:', error);
+    console.error('Erreur de connexion de la base de donnees:', error);
 
   }
 };
