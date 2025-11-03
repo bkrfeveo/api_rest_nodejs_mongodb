@@ -48,17 +48,17 @@ const userSchema = new mongoose.Schema({
 });
 
 // Hasher le mot de passe avant  de l'enregistrer
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+// userSchema.pre('save', async function(next) {
+//   if (!this.isModified('password')) return next();
   
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
+//   try {
+//     const salt = await bcrypt.genSalt(10);
+//     this.password = await bcrypt.hash(this.password, salt);
+//     next();
+//   } catch (error) {
+//     next(error);
+//   }
+// });
 
 // Verifier si le mot de passe est correct
 userSchema.methods.comparePassword = async function(candidatePassword) {

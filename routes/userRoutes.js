@@ -1,36 +1,10 @@
 const express = require('express')
-const router = express.Router();
-
+const authenticateToken = require('../middleware/authMiddleware')
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 
-
-const JWT_SECRET = '02c0e3997ebada3dd8f9a4b9195edd55d2c0ce93e5401368b8325727c34466f30a87756a7cea051e73c1ddb82102fbabd3394873125ebc2c173e0c9e56513d49';
-
-const authenticateToken = async (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Format: "Bearer TOKEN"
-    try {
-
-        if (!token) {
-            return res.status(401).json({ message: 'Token d\'accès requis' });
-        }
-        
-        const decodedToken = jwt.verify(token, JWT_SECRET);
-
-        const user = await User.findById(decodedToken.userId).select('-password');
-        if (!user) {
-            return res.status(401).json({ message: 'Token is not valid' });
-        }
-        
-        req.user = user;
-        next();
-    } catch (err) {
-        res.status(401).json({ message: 'Token is not valid' });
-    }
-};
-
+const router = express.Router();
 
 // Inscrire un nouveau user
 router.post('/register', async (req, res) => {
@@ -45,19 +19,17 @@ router.post('/register', async (req, res) => {
             lastName: req.body.lastName,
             username: req.body.username,
             email: req.body.email,
-            password: passwordHashed,
+            password: passwordHashed
         };
 
         // Voir si l'utilisateur existe
-        const userExist = await User.findOne({
-        $or: [{ email }, { username }]
-        });
+        const user = await User.findOne({ username: newUser.username });
 
         // Si l'utilisateur n'a jamais eu de compte alors on l'inscrit
-        if(!userExist){
+        if(!user){
             // controle de saisie en verifiant si les champs sont vides ou absents
             if(
-                !newUser.firstName ||
+                !newUser.firstName || newUser.firstName === "" ||
                 !newUser.lastName ||
                 !newUser.email ||
                 !newUser.username ||
@@ -84,8 +56,8 @@ router.post('/register', async (req, res) => {
         }
     } catch(err) {
         res.status(500).json({
-            message: 'Erreur cote serveur',
-            error: error.message
+            message: "Erreur lors de l'inscription",
+            error: err.message
         });
     }
 })
@@ -101,20 +73,21 @@ router.post('/login', async (req, res) => {
         };
         
         // Vérifier si l'utilisateur avec cette username existe
-        const usernameExists = await User.findOne({ username });
+        const user = await User.findOne({ username });
         
         // Vérified si le password entré est correct grace à bcrypt
+        // const verifiedPassword = await user.comparePassword(password);
+        const verifiedPassword = bcrypt.compareSync(password, user.password); // True or false 
 
-        const verifiedPassword = await user.comparePassword(password);
 
         // Si username et password sont verifiés alors on génère un jwt access token
-        if(usernameExists && verifiedPassword) {
+        if(user && verifiedPassword) {
             const accessToken = jwt.sign(
                 { 
                     username: username, 
                     password: password
                 }, 
-                JWT_SECRET,
+                process.env.JWT_SECRET || '02c0e3997ebada3dd8f9a4b9195edd55d2c0ce93e5401368b8325727c34466f30a87756a7cea051e73c1ddb82102fbabd3394873125ebc2c173e0c9e56513d49',
                 { expiresIn: '24h' }
             )
 
@@ -123,12 +96,12 @@ router.post('/login', async (req, res) => {
                 accessToken: accessToken
             });
         } else {
-            res.status(401).json({ message: "Erreur : Connexion échoué" });
+            res.status(400).json({ message: "Erreur : Connexion échoué" });
         };
     } catch(err) {
         res.status(500).json({
-            message: 'Erreur cote serveur',
-            error: error.message
+            message: 'Erreur lors de la connexion',
+            error: err.message
         });
     }
 
@@ -147,4 +120,3 @@ router.get('/me', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
-module.exports = authenticateToken;
