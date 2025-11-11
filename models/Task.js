@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+
 const taskSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -18,8 +19,9 @@ const taskSchema = new mongoose.Schema({
   },
   priority: {
     type: String,
-    enum: ['low', 'medium', 'high'],
-    default: 'medium'
+    trim: true,
+    enum: ['faible', 'moyen', 'eleve'],
+    default: ''
   },
   dueDate: {
     type: Date

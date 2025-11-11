@@ -1,27 +1,32 @@
 const express = require('express')
-const isAuthenticate = require('../middleware/authMiddleware')
+const authenticateToken = require('../middleware/authMiddleware')
 const Task = require('../models/Task')
 const router = express.Router();
 
 // Recuperer tous les taches contenues dans le stockage en memoire
-// isAuthenticate pour verfier si l'utilisateur est connecté
-router.get('/tasks', isAuthenticate, async (req, res) => {
+// authenticateToken pour verfier si l'utilisateur est connecté
+router.get('/tasks', authenticateToken, async (req, res) => {
   try {
+    
     // Pagination
     const { page = 1, limit = 10 } = req.query;
     // fitltrer le resultat pour affirche que les taches creee par cet utilisateur
     const filter = { createdBy: req.user[0]._id };
     // affirche ces taches
     const tasks = await Task.find(filter)
-      .populate('createdBy', 'username email')
-      // du plus recent au plus ancien
-      .sort({ createdAt: -1 })
-      // afficher les taches par groupe de 10 taches
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+    // .populate('user')
+    
+    .populate('createdBy', 'username email')
+    // du plus recent au plus ancien
+    .sort({ createdAt: -1 })
+    // afficher les taches par groupe de 10 taches
+    .limit(limit * 1)
+    .skip((page - 1) * limit);
     
     // le nombre de taches trouvees
+    // console.log(tasks);
     const total = await Task.countDocuments(filter);
+    // console.log("Donnees user : ", req.user);
 
     res.status(200).json({
       tasks,
@@ -30,6 +35,8 @@ router.get('/tasks', isAuthenticate, async (req, res) => {
       total
     });
   } catch (err) {
+    console.log("Erreur cote serveur : ", err);
+    
     res.status(500).json({
       message: 'Erreur de recuperation des donnees',
       error: err.message
@@ -39,7 +46,7 @@ router.get('/tasks', isAuthenticate, async (req, res) => {
 
 
 // Recuperer une tache specifique avec son ID
-router.get('/tasks/:id', async (req, res) => {
+router.get('/tasks/:id', authenticateToken, async (req, res) => {
   const idParam = req.params.id
   try {  
     const taskId = await Task.findById(idParam)
@@ -50,7 +57,7 @@ router.get('/tasks/:id', async (req, res) => {
       return res.status(404).json({ message: "Tache demandée introuvable" })
     }
     // Verifier si l'utlisateur a acces a la tache demandee
-    if (taskId.createdBy._id.toString() !== req.user._id.toString()) {
+    if (taskId.createdBy._id.toString() !== req.user[0]._id.toString()) {
       return res.status(403).json({ message: 'Acces refuse' });
     }
     res.status(200).json({
@@ -68,7 +75,7 @@ router.get('/tasks/:id', async (req, res) => {
 
 
 // Ajouter une nouvelle tache
-router.post("/tasks", isAuthenticate, async (req, res) => {
+router.post("/tasks", authenticateToken, async (req, res) => {
   // Ajouter la tache de maniere fictif dans datas.js
   try{
     const { title, description, completed, priority, dueDate } = req.body;
@@ -81,25 +88,33 @@ router.post("/tasks", isAuthenticate, async (req, res) => {
       return res.status(400).json({ message: "Le champ description est requis !" });
     } 
     
-    console.log(req.user[0]._id);
+    // console.log(req.body);
     
+    // console.log("Donnees user lors du post : ", req.user);
+    // console.log("L'ID du user lors du post : ", req.user[0]._id);
+
     // Creer une nouvelle tache
     const task = new Task({
       title,
       description,
-      completed,
-      priority,
+      completed: completed || false,
+      priority: priority || 'moyen',
       dueDate,
-      createdBy: req.user[0]._id
+      createdBy: req.user[0]._id,
     })
+    
     // Enregistrer la tache creee
     await task.save();
+    
+    // Remplir la tâche avec les informations utilisateur
+    // await task.populate('createdBy', 'username email');
+
     // Code 201 la tache bien est ajoutee 
     res.status(201).json({
       message: "Tache créée avec succès !",
       task: task
     });
-  } catch (err) {
+  } catch (err) {  
     res.status(500).json({
       message: 'Erreur lors de la creation de la tache',
       err: err.message
@@ -109,22 +124,24 @@ router.post("/tasks", isAuthenticate, async (req, res) => {
 
 
 // Mettre a jour une tache specifique avec son ID
-router.put("/tasks/:id", isAuthenticate, async (req, res) => {
+router.put("/tasks/:id", authenticateToken, async (req, res) => {
   const idParam = req.params.id;
   try {
-    const { title, description, completed, priority, dueDate, createdBy } = req.body;
+    const { title, description, completed, priority, dueDate } = req.body;
     // chercher d'abord la tache a modifier
     const task = await Task.findById(idParam);
     // Verifier si elle existe
     if(!task) return res.status(404).json({ message: "Tache non trouvee "});
     
+    console.log(req.user);
+
     // Verifier si l'utilisateur peut modifier la tache demandee
-    if(task.createdBy.toString() !== req.user._id.toString()) {
+    if(task.createdBy.toString() !== req.user[0]._id.toString()) {
       return res.status(403).json({ message: "Acces refuse" })
     }  
     
     // effectuer le mis a jour
-    const taskUpdated = Task.findByIdAndUpdate (
+    const taskUpdated = await Task.findByIdAndUpdate (
       idParam,
       {
         // soit le titre entre soit l'ancien titre reste inchange
@@ -134,7 +151,8 @@ router.put("/tasks/:id", isAuthenticate, async (req, res) => {
         priority: priority || task.priority,
         dueDate: dueDate || task.dueDate
       }
-    ).populate('createdBy', 'username email');
+    )
+    // .populate('createdBy', 'username email');
 
     res.status(200).json({ 
       message: "Tache mise à jour avec succès", 
@@ -151,7 +169,7 @@ router.put("/tasks/:id", isAuthenticate, async (req, res) => {
 
 
 // Supprimer un tache specifique avec son ID
-router.delete("/tasks/:id", isAuthenticate, async (req, res) => {
+router.delete("/tasks/:id", authenticateToken, async (req, res) => {
   const idParam = req.params.id;
   try {
     // rechercher la tache a supprimer
@@ -160,7 +178,7 @@ router.delete("/tasks/:id", isAuthenticate, async (req, res) => {
     // verifier si la tache est trouvee
     if (!taskDelete) return res.status(404).json({ message: 'Tache non trouvee' });
     // Verifier si c'est l'utilisateur qui l'a creee
-    if (taskDelete.createdBy.toString() !== req.user._id.toString()) {
+    if (taskDelete.createdBy.toString() !== req.user[0]._id.toString()) {
       return res.status(403).json({ message: 'Acces refuse' });
     };
 

@@ -52,7 +52,7 @@ router.post('/register', async (req, res) => {
             };
         // Sinon message d'erreur disant que l'utilisateur existe deja
         } else {
-            res.status(404).json({ message: "Erreur l'utilisateur a deja un compte" });
+            res.status(404).json({ message: "Erreur un utilisateur avec cet email a deja un compte" });
         }
     } catch(err) {
         res.status(500).json({
@@ -93,10 +93,15 @@ router.post('/login', async (req, res) => {
 
             res.status(200).json({
                 message: "Utilisateur connectee avec succès !",
-                accessToken: accessToken
+                accessToken: accessToken,
+                user: {
+                    id: user._id,
+                    username: user.username,
+                    email: user.email,
+                }
             });
         } else {
-            res.status(400).json({ message: "Erreur : Connexion échoué" });
+            res.status(400).json({ message: "Nom d'utilisateur ou mot de passe incorrect" });
         };
     } catch(err) {
         res.status(500).json({

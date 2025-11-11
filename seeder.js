@@ -39,7 +39,7 @@ const migrateData = async () => {
         title: "Faire les courses",
         description: "Acheter du pain et du lait",
         completed: true,
-        priority: "high",
+        priority: "eleve",
         dueDate: "2025-10-25",
         createdAt: "2025-10-21T10:00:00Z"
     },
@@ -48,7 +48,7 @@ const migrateData = async () => {
         title: "Rendre visite mes amis",
         description: "L'apres midi à 16h. Rendre visite Modou pour discuter avec lui",
         completed: false,
-        priority: "low",
+        priority: "faible",
         dueDate: "2025-10-29",
         createdAt: "2025-10-29T16:00:00Z"
     },
@@ -57,7 +57,7 @@ const migrateData = async () => {
         title: "Faire de la natation",
         description: "Je dois me preparer a l'examen de natation qui sera dans une semaine.",
         completed: false,
-        priority: "medium",
+        priority: "moyen",
         dueDate: "2025-10-31",
         createdAt: "2025-10-21T10:00:00Z"
     },

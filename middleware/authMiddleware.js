@@ -7,8 +7,8 @@ const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Format: "Bearer TOKEN"
     try {
-
         if (!token) {
+            console.log("Token requis : ", req.user);
             return res.status(401).json({ message: 'Token d\'accès requis' });
         }
         
@@ -17,14 +17,15 @@ const authenticateToken = async (req, res, next) => {
         
         const user = await User.find({username: decodedToken.username}).select('-password');
         if (!user) {
-            return res.status(401).json({ message: 'Token is not valid' });
+            return res.status(401).json({ message: 'Token invalide' });
         }
+        // console.log(user);
         
         req.user = user;
         next();
     } catch (err) {
         res.status(401).json({ 
-            message: 'Token is not valid',
+            message: 'Erreur lors de la verification de l\'utilisateur',
             error: err
          });
     }

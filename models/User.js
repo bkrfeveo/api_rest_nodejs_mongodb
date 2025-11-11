@@ -36,6 +36,11 @@ const userSchema = new mongoose.Schema({
     required: [true, 'le mot de passe est requis'],
     minlength: [6, 'le mot de passe doit avoir au moins 6 characters long']
   },
+  tasks: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Task',
+    required: true,
+  }],
   role: {
     type: String,
     enum: ['user', 'admin'],
